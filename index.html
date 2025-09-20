@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>mini.neal.fun — playful micro-site</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#ffd166;--muted:#9aa4b2}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#071029 0%, #081629 60%);color:#e6eef6}
+    .wrap{max-width:960px;margin:28px auto;padding:28px}
+    header{display:flex;align-items:center;gap:18px}
+    h1{font-size:36px;margin:0}
+    p.lead{color:var(--muted);margin:6px 0 22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    .card h3{margin:0 0 6px;font-size:18px}
+    .muted{color:var(--muted);font-size:13px}
+    button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+    .center{display:flex;gap:8px;align-items:center}
+
+    /* donut area */
+    #donutArea{display:flex;flex-wrap:wrap;gap:12px}
+    .donut{width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;user-select:none;background:#112233}
+
+    /* word association */
+    .wordList{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:#071827;padding:8px 10px;border-radius:999px;font-weight:600;border:1px solid rgba(255,255,255,0.03)}
+
+    footer{color:var(--muted);font-size:13px;margin-top:22px;text-align:center}
+
+    /* responsive headline */
+    @media (max-width:480px){h1{font-size:26px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#ffd166,#ef476f);display:flex;align-items:center;justify-content:center;color:#071429;font-weight:900">mf</div>
+      <div>
+        <h1>mini.neal.fun — tiny interactive toys</h1>
+        <p class="lead">A small, single-file GitHub Pages-ready site with interactive micro-experiments you can edit & extend.</p>
+      </div>
+    </header>
+
+    <main style="margin-top:18px">
+      <div class="grid">
+        <!-- Donuts: click to collect -->
+        <section class="card">
+          <h3>Donut Collector</h3>
+          <p class="muted">Click donuts to collect them. Score persists in this browser.</p>
+          <div style="margin:12px 0" id="donutStats">Score: <strong id="score">0</strong></div>
+          <div id="donutArea" aria-hidden="false"></div>
+          <div style="margin-top:12px" class="center">
+            <button id="addDonut">+ Add Donut</button>
+            <button id="resetDonut" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)">Reset</button>
+          </div>
+        </section>
+
+        <!-- Word association (simple): enter a word and get 3 associations -->
+        <section class="card">
+          <h3>Word Association</h3>
+          <p class="muted">Type a word and click "associate" — shows 3 playful associations.</p>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input id="wordInput" placeholder="type a word" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+            <button id="assocBtn">Associate</button>
+          </div>
+          <div style="margin-top:12px" class="wordList" id="associations"></div>
+        </section>
+
+        <!-- Random fun facts (locally seeded) -->
+        <section class="card">
+          <h3>Surprise Fact</h3>
+          <p class="muted">Click for a random bite-sized fact (completely offline).</p>
+          <div style="margin:14px 0;min-height:56px;display:flex;align-items:center" id="fact">Press the button to get a fact.</div>
+          <div class="center"><button id="factBtn">Give me a fact</button></div>
+        </section>
+
+        <!-- Small settings / about -->
+        <section class="card">
+          <h3>Settings</h3>
+          <p class="muted">Export or import site data (localStorage), or toggle a playful confetti.</p>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="exportBtn">Export data</button>
+            <button id="importBtn">Import data</button>
+            <button id="confettiBtn">Toggle confetti</button>
+          </div>
+          <input id="importArea" placeholder='Paste JSON here to import' style="margin-top:8px;display:block;width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit">
+        </section>
+
+      </div>
+    </main>
+
+    <footer>
+      This is a single-file starter. Fork it, add games, and publish to GitHub Pages (index.html).
+    </footer>
+  </div>
+
+  <script>
+    // --- Utilities ---
+    const $ = sel => document.querySelector(sel);
+    const rand = (arr)=> arr[Math.floor(Math.random()*arr.length)];
+
+    // --- Donut Collector ---
+    const donutArea = $('#donutArea');
+    const scoreEl = $('#score');
+    const scoreKey = 'mini_score_v1';
+    let score = Number(localStorage.getItem(scoreKey) || 0);
+    scoreEl.textContent = score;
+
+    function makeDonut(){
+      const d = document.createElement('div');
+      d.className = 'donut';
+      d.textContent = ['🍩','🍪','🥯'][Math.floor(Math.random()*3)];
+      d.addEventListener('click', ()=>{
+        score += 1;
+        scoreEl.textContent = score;
+        localStorage.setItem(scoreKey, score);
+        // tiny float + fade effect
+        const f = document.createElement('div');
+          f.textContent = '+1';
+          f.style.position='absolute';
+          f.style.left=(d.getBoundingClientRect().left + 12) + 'px';
+          f.style.top=(d.getBoundingClientRect().top - 8) + 'px';
+          f.style.pointerEvents='none';
+          f.style.opacity='0';
+          f.style.transition='transform 700ms ease, opacity 700ms ease';
+          document.body.appendChild(f);
+          requestAnimationFrame(()=>{f.style.opacity='1';f.style.transform='translateY(-28px)';});
+          setTimeout(()=>f.remove(),700);
+      });
+      return d;
+    }
+
+    function addDonut(){donutArea.appendChild(makeDonut());}
+    // seed 6 donuts
+    for(let i=0;i<6;i++) addDonut();
+    $('#addDonut').addEventListener('click', addDonut);
+    $('#resetDonut').addEventListener('click', ()=>{score=0;localStorage.removeItem(scoreKey);scoreEl.textContent=score;donutArea.innerHTML='';for(let i=0;i<6;i++) addDonut();});
+
+    // --- Word association (naive & playful) ---
+    const assocBtn = $('#assocBtn');
+    const associations = $('#associations');
+    const seeds = {
+      'apple':['red','tree','crisp'],
+      'ocean':['wave','salt','deep'],
+      'party':['music','cake','friends']
+    };
+    assocBtn.addEventListener('click', ()=>{
+      const w = $('#wordInput').value.trim().toLowerCase() || 'music';
+      // try seeded then generate playful ideas
+      let out = seeds[w] || [];
+      while(out.length < 3){
+        out.push( (w+'-'+Math.random().toString(36).slice(2,6)) );
+      }
+      associations.innerHTML = '';
+      out.slice(0,3).forEach(x=>{
+        const c = document.createElement('div'); c.className='chip'; c.textContent=x; associations.appendChild(c);
+      });
+    });
+
+    // --- Surprise fact ---
+    const facts = [
+      'A group of flamingos is called a flamboyance.',
+      'Honey never spoils — archaeologists found edible honey in ancient tombs.',
+      'Bananas are berries; strawberries aren\'t.'
+    ];
+    $('#factBtn').addEventListener('click', ()=>{ $('#fact').textContent = rand(facts); });
+
+    // --- Settings / export-import ---
+    const exportBtn = $('#exportBtn');
+    const importBtn = $('#importBtn');
+    const importArea = $('#importArea');
+
+    function exportData(){
+      const data = {score:localStorage.getItem(scoreKey)};
+      const blob = new Blob([JSON.stringify(data, null, 2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='mini-data.json'; a.click(); URL.revokeObjectURL(url);
+    }
+    exportBtn.addEventListener('click', exportData);
+
+    importBtn.addEventListener('click', ()=>{
+      try{
+        const obj = JSON.parse(importArea.value);
+        if(obj.score != null){ localStorage.setItem(scoreKey, Number(obj.score)); score = Number(obj.score); scoreEl.textContent = score; alert('Imported score'); }
+        else alert('no recognized keys found');
+      }catch(e){alert('invalid JSON');}
+    });
+
+    // --- confetti (tiny) ---
+    let confettiOn = false; let confettiTimer;
+    $('#confettiBtn').addEventListener('click', ()=>{
+      confettiOn = !confettiOn; if(confettiOn) startConfetti(); else stopConfetti();
+    });
+    function makeConfetti(){
+      const el = document.createElement('div'); el.textContent = '🎉'; el.style.position='fixed'; el.style.left=Math.random()*100+'%'; el.style.top='-20px'; el.style.fontSize=(8+Math.random()*22)+'px'; el.style.opacity='0.9'; document.body.appendChild(el);
+      el.animate([{transform:'translateY(0) rotate(0)'},{transform:'translateY(110vh) rotate(640deg)'}],{duration:2200+Math.random()*1200,iterations:1});
+      setTimeout(()=>el.remove(),3500);
+    }
+    function startConfetti(){ confettiTimer = setInterval(makeConfetti,160); }
+    function stopConfetti(){ clearInterval(confettiTimer); }
+
+    // handy: keyboard shortcut R to add donut
+    window.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='r') addDonut(); });
+
+    // small progressive enhancement: prefer-reduced-motion respect
+    if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){ stopConfetti(); }
+
+    // declare ready
+    console.log('mini.neal.fun ready — edit index.html and push to GitHub Pages');
+  </script>
+</body>
+</html>
